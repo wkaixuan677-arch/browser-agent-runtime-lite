@@ -1,0 +1,25 @@
+{
+  "name": "browser-agent-runtime-lite",
+  "version": "0.1.0",
+  "private": false,
+  "description": "Evidence-gated browser agent runtime with bounded recovery and deterministic local demos.",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "demo": "tsx src/demo.ts",
+    "test": "tsx --test test/*.test.ts",
+    "typecheck": "tsc --noEmit",
+    "check": "npm run typecheck && npm test"
+  },
+  "dependencies": {
+    "playwright": "^1.62.1"
+  },
+  "devDependencies": {
+    "@types/node": "^26.1.2",
+    "tsx": "^4.23.10",
+    "typescript": "^5.9.3"
+  },
+  "license": "MIT"
+}

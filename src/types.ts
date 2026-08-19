@@ -66,6 +66,17 @@ export type ToolError = {
   retryable: boolean
 }
 
+export type ToolExecutionResult =
+  | { ok: true }
+  | { ok: false; error: ToolError }
+
+export interface BrowserToolAdapter {
+  openPage(url: string): Promise<void>
+  observe(): Promise<BrowserObservation>
+  perform(action: BrowserAction): Promise<ToolExecutionResult>
+  cancel?(reason?: string): Promise<void> | void
+}
+
 export type ToolResult =
   | { ok: true; observation: BrowserObservation }
   | { ok: false; error: ToolError; observation: BrowserObservation }

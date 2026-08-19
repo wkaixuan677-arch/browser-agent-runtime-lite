@@ -7,7 +7,8 @@ import { ScriptedPolicy } from '../src/policy.ts'
 import { startFixtureServer } from '../src/fixture-server.ts'
 import { ExperienceMemoryStore } from '../src/memory.ts'
 import { happyActions, recoveryActions, reportPlan, reportTask } from '../src/scenarios.ts'
-import type { AgentPolicy, BrowserAction, PolicyContext } from '../src/types.ts'
+import { MAX_TRAJECTORY_OBSERVATION_TEXT_LENGTH, TrajectoryRecorder } from '../src/trajectory.ts'
+import type { AgentPolicy, BrowserAction, BrowserObservation, BrowserToolAdapter, PolicyContext, ToolExecutionResult } from '../src/types.ts'
 import { launchBrowser } from '../src/launch-browser.ts'
 
 test('completes only after visible evidence satisfies every criterion', async () => {
@@ -135,6 +136,118 @@ test('blocks a cross-origin request before navigation leaves the allowlist', asy
   }
 })
 
+test('turns an open-stage timeout into a blocked terminal trajectory', async () => {
+  const origin = 'http://127.0.0.1:4178'
+  const tools = fakeTools({ openPage: () => new Promise<void>(() => undefined) })
+  const runtime = new BrowserAgentRuntime(new ScriptedPolicy(reportPlan, happyActions()), tools)
+  const task = { ...reportTask(origin, 'open-timeout'), budget: { maxSteps: 2, maxRecoveries: 0, timeoutMs: 120 } }
+  const result = await runtime.run(task)
+
+  assert.equal(result.status, 'blocked')
+  assert.equal(result.steps, 0)
+  assert.match(result.answer, /open timed out/)
+  assert.ok(result.trajectory.some((event) => event.type === 'stage.failed' && JSON.stringify(event.payload).includes('STAGE_TIMEOUT')))
+  assert.equal(result.trajectory.at(-1)?.type, 'run.finished')
+})
+
+test('applies the same timeout guard to policy action selection', async () => {
+  const origin = 'http://127.0.0.1:4178'
+  const policy: AgentPolicy = {
+    async createPlan() {
+      return reportPlan
+    },
+    async nextAction() {
+      return new Promise<BrowserAction>(() => undefined)
+    },
+  }
+  const task = { ...reportTask(origin, 'policy-timeout'), budget: { maxSteps: 2, maxRecoveries: 0, timeoutMs: 120 } }
+  const result = await new BrowserAgentRuntime(policy, fakeTools()).run(task)
+
+  assert.equal(result.status, 'blocked')
+  assert.equal(result.steps, 0)
+  assert.match(result.answer, /policy\.nextAction timed out/)
+  assert.ok(result.trajectory.some((event) => event.type === 'stage.failed' && JSON.stringify(event.payload).includes('policy.nextAction')))
+  assert.equal(result.trajectory.at(-1)?.type, 'run.finished')
+})
+
+test('turns a policy exception into a failed terminal trajectory without leaking its secret', async () => {
+  const origin = 'http://127.0.0.1:4178'
+  const policy: AgentPolicy = {
+    async createPlan() {
+      throw new Error('Provider rejected Bearer super-secret-token for admin@example.com')
+    },
+    async nextAction() {
+      return { kind: 'observe', id: 'unused' }
+    },
+  }
+  const result = await new BrowserAgentRuntime(policy, fakeTools()).run(reportTask(origin, 'policy-exception'))
+  const serialized = JSON.stringify(result)
+
+  assert.equal(result.status, 'failed')
+  assert.equal(result.steps, 0)
+  assert.match(result.answer, /createPlan failed/)
+  assert.doesNotMatch(serialized, /super-secret-token|admin@example\.com/)
+  assert.ok(result.trajectory.some((event) => event.type === 'stage.failed' && JSON.stringify(event.payload).includes('STAGE_EXCEPTION')))
+  assert.equal(result.trajectory.at(-1)?.type, 'run.finished')
+})
+
+test('turns an unexpected tool exception into a failed terminal trajectory', async () => {
+  const origin = 'http://127.0.0.1:4178'
+  const tools = fakeTools({ perform: async () => { throw new Error('tool adapter crashed') } })
+  const runtime = new BrowserAgentRuntime(
+    new ScriptedPolicy(reportPlan, [{ kind: 'observe', id: 'observe-once' }]),
+    tools,
+  )
+  const result = await runtime.run(reportTask(origin, 'tool-exception'))
+
+  assert.equal(result.status, 'failed')
+  assert.equal(result.steps, 1)
+  assert.match(result.answer, /tool failed/)
+  assert.equal(result.trajectory.at(-1)?.type, 'run.finished')
+})
+
+test('redacts typed input, credentials, email addresses, URL queries and long observations', () => {
+  const recorder = new TrajectoryRecorder()
+  recorder.record('action.selected', 'act', {
+    kind: 'type',
+    id: 'secret-input',
+    role: 'textbox',
+    name: 'API key',
+    text: 'do-not-store-this-input',
+  })
+  recorder.record('observation.captured', 'observe', {
+    url: 'https://example.test/report?token=query-secret&email=admin@example.com',
+    title: 'Contact admin@example.com',
+    text: `Authorization: Bearer bearer-secret-value api_key=inline-secret ${'x'.repeat(2_500)}`,
+    interactive: [],
+    token: 'property-secret',
+  })
+
+  const events = recorder.snapshot()
+  const serialized = JSON.stringify(events)
+  const actionPayload = events[0]?.payload as { text: string }
+  const observationPayload = events[1]?.payload as BrowserObservation
+  assert.equal(actionPayload.text, '<redacted-input>')
+  assert.ok(observationPayload.text.length <= MAX_TRAJECTORY_OBSERVATION_TEXT_LENGTH)
+  assert.match(observationPayload.url, /\?<redacted-query>/)
+  assert.doesNotMatch(serialized, /do-not-store|query-secret|admin@example\.com|bearer-secret|inline-secret|property-secret/)
+})
+
+test('returns a terminal blocked result when the step budget is exhausted', async () => {
+  const origin = 'http://127.0.0.1:4178'
+  const task = { ...reportTask(origin, 'step-budget'), budget: { maxSteps: 1, maxRecoveries: 0, timeoutMs: 1_000 } }
+  const runtime = new BrowserAgentRuntime(
+    new ScriptedPolicy(reportPlan, [{ kind: 'observe', id: 'observe-once' }]),
+    fakeTools(),
+  )
+  const result = await runtime.run(task)
+
+  assert.equal(result.status, 'blocked')
+  assert.equal(result.steps, 1)
+  assert.match(result.answer, /step budget exhausted/)
+  assert.equal(result.trajectory.at(-1)?.type, 'run.finished')
+})
+
 class RecordingPolicy implements AgentPolicy {
   hintIds: string[] = []
 
@@ -166,5 +279,23 @@ async function withRuntime(
     await context?.close()
     await browser?.close()
     await fixture.close()
+  }
+}
+
+function fakeTools(overrides: {
+  openPage?: (url: string) => Promise<void>
+  observe?: () => Promise<BrowserObservation>
+  perform?: (action: BrowserAction) => Promise<ToolExecutionResult>
+} = {}): BrowserToolAdapter {
+  const observation: BrowserObservation = {
+    url: 'http://127.0.0.1:4178/',
+    title: 'Fixture',
+    text: 'No completion evidence is visible.',
+    interactive: [],
+  }
+  return {
+    openPage: overrides.openPage ?? (async () => undefined),
+    observe: overrides.observe ?? (async () => observation),
+    perform: overrides.perform ?? (async () => ({ ok: true })),
   }
 }

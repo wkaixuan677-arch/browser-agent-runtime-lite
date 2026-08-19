@@ -6,6 +6,10 @@ Agent 进程停止，并不等于用户目标已经完成。本项目要求 Agen
 
 > 本项目是独立完成的 clean-room 公开实现，不包含任何公司代码、内部提示词、私有轨迹、账号凭据或生产数据，也不代表任何公司的内部落地成果。
 
+![Browser Agent Runtime 演示](docs/demo.gif)
+
+查看：[完整架构说明](docs/ARCHITECTURE.md) · [中文面试讲解材料](docs/INTERVIEW_GUIDE.md)
+
 ## 项目解决什么问题
 
 - **任务契约（Task Contract）**：固定任务目标、成功条件、允许访问的来源及执行预算。

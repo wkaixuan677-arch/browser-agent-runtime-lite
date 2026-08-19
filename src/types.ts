@@ -10,6 +10,7 @@ export type TaskContract = {
     textIncludes?: string[]
   }
   blockerText?: string[]
+  memoryTags?: string[]
   budget: {
     maxSteps: number
     maxRecoveries: number
@@ -51,6 +52,7 @@ export type PolicyContext = {
   observation?: BrowserObservation
   failedActionFingerprints: string[]
   recoveryHint?: string
+  experienceHints: Array<{ id: string; lesson: string; confidence: number }>
 }
 
 export interface AgentPolicy {

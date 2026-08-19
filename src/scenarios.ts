@@ -17,6 +17,7 @@ export function reportTask(origin: string, id = 'report-demo'): TaskContract {
     allowedOrigins: [origin],
     successCriteria: { urlIncludes: '/report', textIncludes: ['Report ready', 'Version 4.2'] },
     blockerText: ['Access unavailable'],
+    memoryTags: ['report'],
     budget: { maxSteps: 4, maxRecoveries: 2, timeoutMs: 15_000 },
   }
 }

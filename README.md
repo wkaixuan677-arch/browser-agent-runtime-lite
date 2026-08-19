@@ -1,5 +1,9 @@
 # Browser Agent Runtime Lite
 
+[![CI](https://github.com/wkaixuan677-arch/browser-agent-runtime-lite/actions/workflows/ci.yml/badge.svg)](https://github.com/wkaixuan677-arch/browser-agent-runtime-lite/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/wkaixuan677-arch/browser-agent-runtime-lite)](https://github.com/wkaixuan677-arch/browser-agent-runtime-lite/releases)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+
 **一个以证据为准入条件、遵循 `规划 → 执行 → 验证 → 恢复` 闭环的 Browser Agent 最小运行时。项目提供可重复的本地 Playwright 演示。**
 
 Agent 进程停止，并不等于用户目标已经完成。本项目要求 Agent 必须取得可观察的网页证据，才能宣布任务完成；遇到失败时，只允许在明确预算内进行恢复，避免无休止循环。
@@ -10,6 +14,8 @@ Agent 进程停止，并不等于用户目标已经完成。本项目要求 Agen
 
 查看：[完整架构说明](docs/ARCHITECTURE.md) · [中文面试讲解材料](docs/INTERVIEW_GUIDE.md)
 
+作品集导航：**Browser Runtime** · [Agent Eval Lab](https://github.com/wkaixuan677-arch/agent-eval-lab) · [Research Agent](https://github.com/wkaixuan677-arch/open-source-research-agent)
+
 ## 项目解决什么问题
 
 - **任务契约（Task Contract）**：固定任务目标、成功条件、允许访问的来源及执行预算。
@@ -17,7 +23,7 @@ Agent 进程停止，并不等于用户目标已经完成。本项目要求 Agen
 - **语义工具调用（Tool Calling）**：通过元素角色和可访问名称操作网页，不只依赖易失效的坐标。
 - **目标验证（Verification）**：缺少 URL 或页面文本证据时，拒绝 Agent 提前结束。
 - **有限恢复（Bounded Recovery）**：记录失败动作，避免在同一状态下反复执行同一错误操作。
-- **经验记忆门控（Memory Gating）**：只有达到 `promoted` 状态的经验才允许自动注入。
+- **经验记忆门控（Memory Gating）**：只有达到 `promoted` 状态的经验才会检索并注入 Policy 上下文。
 - **可观测轨迹（Trajectory）**：保存经过脱敏、顺序明确的规划、动作、验证与恢复事件。
 - **确定性演示**：覆盖正常成功、失败后恢复成功、遇到明确阻断三类场景。
 
@@ -82,15 +88,15 @@ explicit-blocked: BLOCKED | steps=0 recoveries=0
 npm run check
 ```
 
-测试覆盖：证据门控完成、语义目标恢复、假完成拒绝、网页阻断处理和 Memory 生命周期门控。GitHub Actions 会自动执行类型检查、全部测试和本地浏览器演示。
+测试覆盖：证据门控完成、首屏已满足目标、语义目标恢复、假完成拒绝、动作后阻断、Memory 注入和跨域请求预拦截。GitHub Actions 会自动执行类型检查、全部测试和本地浏览器演示。
 
 ## 安全边界
 
-- 只允许访问任务契约明确列出的来源；
+- 只允许访问任务契约明确列出的来源，跨域导航会在网络请求发出前拦截；
 - 每次执行使用全新的临时浏览器上下文；
 - 测试页面不接收账号或个人数据；
 - 不绕过验证码、登录墙或访问控制；
-- 步数、恢复次数和运行时间均有上限；
+- 步数、恢复次数和浏览器动作均有上限；运行总时限在循环边界检查，尚未实现对任意 Policy 调用的强制取消；
 - 输出轨迹会移除本地绝对路径等环境信息。
 
 漏洞反馈方式见 [SECURITY.md](SECURITY.md)。
@@ -106,11 +112,9 @@ npm run check
 ## 后续计划
 
 - 增加模型无关的 LLM Adapter 和结构化输出约束；
-- 加入截图证据及更严格的动作结果验证；
+- 增加全链路 AbortSignal、截图证据及更严格的动作结果验证；
 - 输出 JSONL 轨迹和轻量评测报告；
 - 增加无需登录、可重复运行的真实网页任务。
-
-作者完整的 12 条 Hard-suite 实验仍在另一个私有研究原型中运行，尚未完成的结果不会归因到本公开仓库。
 
 ## 开源协议与贡献
 

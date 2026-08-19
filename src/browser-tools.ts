@@ -2,6 +2,9 @@ import type { Page } from 'playwright'
 import type { BrowserAction, BrowserObservation, ToolResult } from './types.ts'
 
 export class BrowserTools {
+  private guardReady?: Promise<void>
+  private blockedOrigin: string | undefined
+
   constructor(
     private readonly page: Page,
     private readonly allowedOrigins: string[],
@@ -9,24 +12,42 @@ export class BrowserTools {
 
   async open(url: string): Promise<BrowserObservation> {
     this.assertAllowed(url)
+    await this.ensureOriginGuard()
     await this.page.goto(url, { waitUntil: 'domcontentloaded' })
     return this.observe()
   }
 
   async execute(action: BrowserAction): Promise<ToolResult> {
+    await this.ensureOriginGuard()
+    this.blockedOrigin = undefined
     if (action.kind === 'finish') {
       return { ok: false, error: { code: 'INVALID_ACTION', message: 'Finish is not a browser tool', retryable: false }, observation: await this.observe() }
     }
     if (action.kind === 'observe') return { ok: true, observation: await this.observe() }
+    const safeObservation = await this.observe()
     try {
       if (action.kind === 'click') {
         await this.page.getByRole(action.role, { name: action.name, exact: true }).click({ timeout: 1_500 })
       } else {
         await this.page.getByRole(action.role, { name: action.name, exact: true }).fill(action.text, { timeout: 1_500 })
       }
+      if (this.blockedOrigin) {
+        return {
+          ok: false,
+          error: { code: 'ORIGIN_NOT_ALLOWED', message: `Origin not allowed: ${this.blockedOrigin}`, retryable: false },
+          observation: safeObservation,
+        }
+      }
       this.assertAllowed(this.page.url())
       return { ok: true, observation: await this.observe() }
     } catch (error) {
+      if (this.blockedOrigin) {
+        return {
+          ok: false,
+          error: { code: 'ORIGIN_NOT_ALLOWED', message: `Origin not allowed: ${this.blockedOrigin}`, retryable: false },
+          observation: safeObservation,
+        }
+      }
       return {
         ok: false,
         error: {
@@ -52,6 +73,30 @@ export class BrowserTools {
   private assertAllowed(url: string): void {
     const origin = new URL(url).origin
     if (!this.allowedOrigins.includes(origin)) throw new Error(`Origin not allowed: ${origin}`)
+  }
+
+  private async ensureOriginGuard(): Promise<void> {
+    if (!this.guardReady) {
+      this.guardReady = this.page.route('**/*', async (route) => {
+        const url = route.request().url()
+        if (this.isAllowed(url)) {
+          await route.continue()
+          return
+        }
+        this.blockedOrigin = new URL(url).origin
+        await route.abort('blockedbyclient')
+      }).then(() => undefined)
+    }
+    await this.guardReady
+  }
+
+  private isAllowed(url: string): boolean {
+    if (url === 'about:blank' || url.startsWith('data:')) return true
+    try {
+      return this.allowedOrigins.includes(new URL(url).origin)
+    } catch {
+      return false
+    }
   }
 }
 

@@ -12,7 +12,12 @@ export async function startFixtureServer(): Promise<{ origin: string; close: () 
       response.end(page('Blocked demo', '<h1>Access unavailable</h1><p>This deterministic scenario intentionally has no public recovery route.</p>'))
       return
     }
-    response.end(page('Demo home', '<h1>Runtime demo</h1><a href="/report">Open report</a>'))
+    if (request.url?.startsWith('/external-link')) {
+      const target = new URL(request.url, 'http://127.0.0.1').searchParams.get('target') ?? 'https://example.invalid/'
+      response.end(page('External navigation', `<h1>Navigation guard</h1><a href="${escapeAttribute(target)}">Leave site</a>`))
+      return
+    }
+    response.end(page('Demo home', '<h1>Runtime demo</h1><a href="/report">Open report</a><a href="/blocked">Open blocked demo</a>'))
   })
   server.listen(0, '127.0.0.1')
   await once(server, 'listening')
@@ -22,6 +27,10 @@ export async function startFixtureServer(): Promise<{ origin: string; close: () 
     origin: `http://127.0.0.1:${address.port}`,
     close: () => closeServer(server),
   }
+}
+
+function escapeAttribute(value: string): string {
+  return value.replaceAll('&', '&amp;').replaceAll('"', '&quot;').replaceAll('<', '&lt;').replaceAll('>', '&gt;')
 }
 
 function page(title: string, body: string): string {

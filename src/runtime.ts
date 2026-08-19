@@ -1,7 +1,7 @@
 import type { AgentPolicy, BrowserAction, BrowserObservation, RunResult, TaskContract, VerificationReport } from './types.ts'
 import { validateTaskContract } from './contract.ts'
 import { BrowserTools } from './browser-tools.ts'
-import { WorkingMemory, actionFingerprint } from './memory.ts'
+import { ExperienceMemoryStore, WorkingMemory, actionFingerprint } from './memory.ts'
 import { TrajectoryRecorder } from './trajectory.ts'
 import { verifyGoal, visibleBlocker } from './verifier.ts'
 
@@ -10,6 +10,7 @@ export class BrowserAgentRuntime {
     private readonly policy: AgentPolicy,
     private readonly tools: BrowserTools,
     private readonly recorder = new TrajectoryRecorder(),
+    private readonly experienceStore = new ExperienceMemoryStore(),
   ) {}
 
   async run(taskInput: TaskContract): Promise<RunResult> {
@@ -20,14 +21,19 @@ export class BrowserAgentRuntime {
     let recoveries = 0
     let steps = 0
     let recoveryHint: string | undefined
+    const experienceHints = this.experienceStore.retrieve(task.memoryTags ?? []).map(({ id, lesson, confidence }) => ({ id, lesson, confidence }))
 
     this.recorder.record('run.started', 'observe', { taskId: task.id, objective: task.objective })
     this.recorder.record('observation.captured', 'observe', observation)
 
     const blocker = visibleBlocker(task, observation)
     if (blocker) return this.finish(task, 'blocked', `BLOCKED: ${blocker}`, steps, recoveries, verification)
+    if (verification.passed) {
+      return this.finish(task, 'completed', 'Goal was already satisfied by the initial page evidence.', steps, recoveries, verification)
+    }
 
-    const plan = await this.policy.createPlan({ phase: 'plan', task, observation, failedActionFingerprints: [] })
+    this.recorder.record('memory.retrieved', 'plan', { memoryIds: experienceHints.map((memory) => memory.id) })
+    const plan = await this.policy.createPlan({ phase: 'plan', task, observation, failedActionFingerprints: [], experienceHints })
     this.recorder.record('plan.created', 'plan', plan)
 
     const deadline = Date.now() + task.budget.timeoutMs
@@ -39,6 +45,7 @@ export class BrowserAgentRuntime {
         plan,
         observation,
         failedActionFingerprints: memory.failedActionFingerprints(),
+        experienceHints,
         ...(recoveryHint ? { recoveryHint } : {}),
       })
       recoveryHint = undefined
@@ -62,6 +69,12 @@ export class BrowserAgentRuntime {
       const outcome = await this.tools.execute(action)
       observation = outcome.observation
       this.recorder.record('tool.finished', 'act', outcome)
+
+      const actionBlocker = visibleBlocker(task, observation)
+      if (actionBlocker) {
+        verification = verifyGoal(task, observation)
+        return this.finish(task, 'blocked', `BLOCKED: ${actionBlocker}`, steps, recoveries, verification)
+      }
 
       if (!outcome.ok) {
         const repeatCount = memory.recordFailure(action)

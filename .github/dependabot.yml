@@ -5,9 +5,11 @@ updates:
     schedule: { interval: weekly }
     groups:
       npm-dependencies: { patterns: ["*"] }
-    ignore:
+    allow:
       - dependency-name: "*"
-        update-types: ["version-update:semver-major"]
+        update-types:
+          - "version-update:semver-minor"
+          - "version-update:semver-patch"
   - package-ecosystem: github-actions
     directory: /
     schedule: { interval: weekly }

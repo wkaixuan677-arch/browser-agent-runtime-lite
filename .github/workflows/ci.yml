@@ -24,6 +24,8 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm audit --audit-level=high
-      - run: npx playwright install --with-deps chromium
+      # GitHub-hosted Ubuntu runners already provide Chromium's system libraries.
+      # Avoid apt mirror stalls; only install the Playwright-managed browser binary.
+      - run: npx playwright install chromium
       - run: npm run check
       - run: npm run demo

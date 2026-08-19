@@ -10,7 +10,7 @@
 2. **设计**：我把运行过程拆成 Plan、Act、Verify、Recover、Finalize，并用 Task Contract 固定目标、成功条件和预算。
 3. **关键点**：Policy 无权直接完成任务；只有 Verifier 收到 URL/可见文本等证据后才能放行。重复失败动作通过动作指纹限制，恢复次数全局有界。
 4. **Memory**：经验带生命周期，只有经过验证并晋升为 `promoted` 的记录才会检索并注入 Policy 上下文，避免一次错误经验污染后续任务。
-5. **安全边界**：跨域导航在网络请求发出前就由 allowlist 拦截，而不是访问后再补判。
+5. **安全边界**：Playwright 可路由的跨域导航会由 BrowserContext allowlist 在请求前拦截，Runtime 还会复核每次观察的来源；这不是进程级网络沙箱，安全上下文需禁用 Service Worker。
 6. **验证**：公开仓库提供完全本地、无需模型密钥的场景和自动测试，因此面试官可以直接复现机制。
 
 ## 高频追问

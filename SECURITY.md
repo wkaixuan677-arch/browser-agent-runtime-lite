@@ -1,13 +1,15 @@
-# Security policy
+# 安全策略
 
-## Supported version
+## 支持版本
 
-Security fixes are applied to the latest commit on `main`.
+安全修复只应用于 `main` 的最新版本。
 
-## Reporting a vulnerability
+## 报告漏洞
 
-Please do not publish credentials, private data, or an exploitable proof of concept in a public issue. Contact the maintainer at `coolwkx@163.com` with a concise description, affected version, and safe reproduction steps.
+请勿在公开 Issue 中发布凭据、隐私数据或可直接利用的攻击细节。请通过 `coolwkx@163.com` 私下联系维护者，并提供受影响版本、简要说明和安全的复现步骤。
 
-## Demo boundary
+## 演示边界
 
-The included demo runs only against a temporary `127.0.0.1` fixture. It does not accept credentials, persist browser profiles, bypass access controls, or call an external model API.
+仓库内置演示只访问临时 `127.0.0.1` 页面，不接收凭据、不持久化浏览器资料、不绕过访问控制，也不调用外部模型 API。
+
+来源守卫由 Playwright BrowserContext 路由和 Runtime 二次来源校验共同实现，但它不是进程级或网络级沙箱。需要更强隔离时，应使用独立 BrowserContext、配置 `serviceWorkers: 'block'`，并在操作系统或容器层限制网络。

@@ -1,8 +1,8 @@
-# Contributing
+# 贡献指南
 
-1. Create a focused branch and keep changes small.
-2. Run `npm run check` and `npm run demo` before opening a pull request.
-3. Explain the behavior change, evidence, and failure modes in the pull request.
-4. Confirm that you have the right to contribute every file.
+1. 创建目标明确的分支，并保持每次修改范围清晰；
+2. 提交 Pull Request 前运行 `npm run check` 和 `npm run demo`；
+3. 在 Pull Request 中说明行为变化、验证证据和可能的失败模式；
+4. 确认你有权公开提交的每一个文件。
 
-Do not submit employer or client code, private prompts, credentials, browser profiles, internal URLs, user data, or proprietary trajectories.
+禁止提交雇主或客户代码、私有提示词、凭据、浏览器资料、内部 URL、用户数据或专有轨迹。

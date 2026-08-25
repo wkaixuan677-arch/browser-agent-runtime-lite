@@ -1,7 +1,7 @@
 # Browser Agent Runtime Lite
 
-[![CI](https://github.com/wkaixuan677-arch/browser-agent-runtime-lite/actions/workflows/ci.yml/badge.svg)](https://github.com/wkaixuan677-arch/browser-agent-runtime-lite/actions/workflows/ci.yml)
-[![Release](https://img.shields.io/github/v/release/wkaixuan677-arch/browser-agent-runtime-lite)](https://github.com/wkaixuan677-arch/browser-agent-runtime-lite/releases)
+[![CI](https://github.com/coolwkx/browser-agent-runtime-lite/actions/workflows/ci.yml/badge.svg)](https://github.com/coolwkx/browser-agent-runtime-lite/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/coolwkx/browser-agent-runtime-lite)](https://github.com/coolwkx/browser-agent-runtime-lite/releases)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 **一个以证据为准入条件、遵循 `规划 → 执行 → 验证 → 恢复` 闭环的 Browser Agent 最小运行时。项目提供可重复的本地 Playwright 演示。**
@@ -12,9 +12,13 @@ Agent 进程停止，并不等于用户目标已经完成。本项目要求 Agen
 
 ![Browser Agent Runtime 演示](docs/demo.gif)
 
-查看：[完整架构说明](docs/ARCHITECTURE.md) · [中文面试讲解材料](docs/INTERVIEW_GUIDE.md)
+查看：[完整架构说明](docs/ARCHITECTURE.md) · [典型案例](docs/CASE_STUDIES.md) · [中文面试讲解材料](docs/INTERVIEW_GUIDE.md)
 
-作品集导航：**Browser Runtime** · [Agent Eval Lab](https://github.com/wkaixuan677-arch/agent-eval-lab) · [Research Agent](https://github.com/wkaixuan677-arch/open-source-research-agent)
+作品集导航：**Browser Runtime** · [Agent Eval Lab](https://github.com/coolwkx/agent-eval-lab) · [Research Agent](https://github.com/coolwkx/open-source-research-agent)
+
+## 在整套 Agent 工程中的位置
+
+本仓库负责“**可靠执行**”：把任务契约、规划、工具调用、证据验证、有限恢复和终止状态连成闭环。它产生的脱敏轨迹可交给 [Agent Eval Lab](https://github.com/coolwkx/agent-eval-lab) 做严格评测；[Research Agent](https://github.com/coolwkx/open-source-research-agent) 则展示相同思想如何落到开源调研场景。
 
 ## 项目解决什么问题
 

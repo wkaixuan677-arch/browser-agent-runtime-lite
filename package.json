@@ -3,9 +3,9 @@
   "version": "0.3.0",
   "private": true,
   "description": "Evidence-gated browser agent runtime with bounded recovery and deterministic local demos.",
-  "repository": "github:wkaixuan677-arch/browser-agent-runtime-lite",
-  "homepage": "https://github.com/wkaixuan677-arch/browser-agent-runtime-lite#readme",
-  "bugs": "https://github.com/wkaixuan677-arch/browser-agent-runtime-lite/issues",
+  "repository": "github:coolwkx/browser-agent-runtime-lite",
+  "homepage": "https://github.com/coolwkx/browser-agent-runtime-lite#readme",
+  "bugs": "https://github.com/coolwkx/browser-agent-runtime-lite/issues",
   "type": "module",
   "engines": {
     "node": ">=22"

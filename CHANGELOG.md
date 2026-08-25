@@ -25,6 +25,6 @@
 - 增加语义浏览器工具、Task Contract、有限恢复和 Memory 生命周期门控；
 - 提供三类确定性本地场景、自动测试、架构图、演示 GIF 与面试材料。
 
-[0.1.0]: https://github.com/wkaixuan677-arch/browser-agent-runtime-lite/releases/tag/v0.1.0
-[0.2.0]: https://github.com/wkaixuan677-arch/browser-agent-runtime-lite/compare/v0.1.0...v0.2.0
-[0.3.0]: https://github.com/wkaixuan677-arch/browser-agent-runtime-lite/compare/v0.2.0...v0.3.0
+[0.1.0]: https://github.com/coolwkx/browser-agent-runtime-lite/releases/tag/v0.1.0
+[0.2.0]: https://github.com/coolwkx/browser-agent-runtime-lite/compare/v0.1.0...v0.2.0
+[0.3.0]: https://github.com/coolwkx/browser-agent-runtime-lite/compare/v0.2.0...v0.3.0
